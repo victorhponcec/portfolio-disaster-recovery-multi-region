@@ -56,7 +56,7 @@ resource "aws_route53_record" "alb_cert_validation_r2" {
 }
 
 resource "aws_acm_certificate_validation" "alb_cert_validation_r2" {
-  provider = aws.west1
+  provider                = aws.west1
   certificate_arn         = aws_acm_certificate.alb_cert_r2.arn
   validation_record_fqdns = [for record in aws_route53_record.alb_cert_validation_r2 : record.fqdn]
 }
