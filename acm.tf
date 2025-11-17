@@ -26,12 +26,6 @@ resource "aws_acm_certificate_validation" "alb_cert_validation" {
   validation_record_fqdns = [for record in aws_route53_record.alb_cert_validation : record.fqdn]
 }
 
-# ACM for ALB | Region 2
-provider "aws" {
-  alias  = "west1"
-  region = "us-west-1"
-}
-
 resource "aws_acm_certificate" "alb_cert_r2" {
   provider          = aws.west1
   domain_name       = var.domain
@@ -60,12 +54,6 @@ resource "aws_acm_certificate_validation" "alb_cert_validation_r2" {
   provider                = aws.west1
   certificate_arn         = aws_acm_certificate.alb_cert_r2.arn
   validation_record_fqdns = [for record in aws_route53_record.alb_cert_validation_r2 : record.fqdn]
-}
-
-# ACM for CloudFront
-provider "aws" {
-  alias  = "use1"
-  region = "us-east-1"
 }
 
 resource "aws_acm_certificate" "cf_cert" {

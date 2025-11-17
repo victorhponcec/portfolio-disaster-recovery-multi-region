@@ -1,13 +1,3 @@
-provider "aws" {
-  region = var.region1
-  default_tags {
-    tags = {
-      Project = "Security"
-      Name    = "Victor-Ponce"
-    }
-  }
-}
-
 resource "aws_vpc" "main" {
   cidr_block           = "10.111.0.0/16"
   enable_dns_support   = true

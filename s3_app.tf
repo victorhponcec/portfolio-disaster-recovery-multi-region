@@ -1,26 +1,68 @@
-resource "random_string" "app_primary" {
-  length  = 10
+provider "aws" {
+  alias  = "primary"
+  region = "us-east-1"  # primary bucket region
+}
+
+provider "aws" {
+  alias  = "secondary"
+  region = "us-west-1"  # secondary bucket region
+}
+
+provider "aws" {
+  alias  = "s3control"
+  region = "us-west-2"  # MRAP region
+}
+
+resource "random_string" "primary" {
+  length  = 8
   upper   = false
   special = false
 }
-resource "random_string" "app_secondary" {
-  length  = 10
+
+resource "random_string" "secondary" {
+  length  = 8
   upper   = false
   special = false
 }
 
-resource "aws_s3_bucket" "app_primary" {
-  bucket        = "app-primary-${random_string.app_primary.result}"
+# Primary bucket
+
+resource "aws_s3_bucket" "primary" {
+  provider        = aws.primary
+  bucket          = "app-primary-${random_string.primary.result}"
+  force_destroy   = true
+}
+
+resource "aws_s3_bucket_versioning" "primary" {
+  provider = aws.primary
+  bucket   = aws_s3_bucket.primary.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+# Secondary bucket
+
+resource "aws_s3_bucket" "secondary" {
+  provider      = aws.secondary
+  bucket        = "app-secondary-${random_string.secondary.result}"
   force_destroy = true
 }
 
-resource "aws_s3_bucket" "app_secondary" {
- provider = aws.west1 #new
-  bucket        = "app-secondary-${random_string.app_secondary.result}"
-  force_destroy = true
+resource "aws_s3_bucket_versioning" "secondary" {
+  provider = aws.secondary
+  bucket   = aws_s3_bucket.secondary.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
 
-resource "aws_iam_role" "replication" {
+# replication Role
+
+
+resource "aws_iam_role" "replication_role" {
   name = "s3-replication-role"
 
   assume_role_policy = jsonencode({
@@ -35,98 +77,80 @@ resource "aws_iam_role" "replication" {
   })
 }
 
-resource "aws_iam_role_policy" "replication" {
-  role = aws_iam_role.replication.id
+resource "aws_iam_role_policy" "replication_policy" {
+  role = aws_iam_role.replication_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
+        Effect = "Allow"
         Action = [
           "s3:GetReplicationConfiguration",
           "s3:ListBucket"
         ]
-        Effect   = "Allow"
-        Resource = aws_s3_bucket.app_primary.arn
+        Resource = aws_s3_bucket.primary.arn
       },
       {
+        Effect = "Allow"
         Action = [
           "s3:GetObjectVersion",
-          "s3:GetObjectVersionAcl"
+          "s3:GetObjectVersionAcl",
+          "s3:GetObjectVersionTagging"
         ]
-        Effect   = "Allow"
-        Resource = "${aws_s3_bucket.app_primary.arn}/*"
+        Resource = "${aws_s3_bucket.primary.arn}/*"
       },
       {
+        Effect = "Allow"
         Action = [
           "s3:ReplicateObject",
           "s3:ReplicateDelete",
           "s3:ReplicateTags",
-          "s3:GetObjectVersionTagging",
-          "s3:GetObjectVersionForReplication",
           "s3:ObjectOwnerOverrideToBucketOwner"
         ]
-        Effect   = "Allow"
-        Resource = "${aws_s3_bucket.app_secondary.arn}/*"
+        Resource = "${aws_s3_bucket.secondary.arn}/*"
       }
     ]
   })
 }
 
-resource "aws_s3_bucket_versioning" "primary_versioning" {
-  bucket = aws_s3_bucket.app_primary.id
+# S3 replication
 
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_versioning" "secondary_versioning" {
-    provider = aws.west1 #new
-  bucket = aws_s3_bucket.app_secondary.id
-
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-resource "aws_s3_bucket_replication_configuration" "replication" {
-  #provider = aws.west1 #must be same region as primary bucket (us-east-1)
-  bucket   = aws_s3_bucket.app_primary.id
-  role     = aws_iam_role.replication.arn
-
-    depends_on = [
-    aws_s3_bucket_versioning.primary_versioning,
-    aws_s3_bucket_versioning.secondary_versioning
-  ]
+resource "aws_s3_bucket_replication_configuration" "primary_to_secondary" {
+  provider = aws.primary
+  bucket   = aws_s3_bucket.primary.id
+  role     = aws_iam_role.replication_role.arn
 
   rule {
     id     = "primary-to-secondary"
     status = "Enabled"
 
     destination {
-      bucket        = aws_s3_bucket.app_secondary.arn
+      bucket        = aws_s3_bucket.secondary.arn
       storage_class = "STANDARD"
     }
   }
+
+  depends_on = [
+    aws_s3_bucket_versioning.primary,
+    aws_s3_bucket_versioning.secondary
+  ]
 }
 
-#Multi-Region Access Point
-provider "aws" {
-  alias  = "s3control"
-  region = "us-west-2"
-}
+# multi-region Access Point MRAP
 
 resource "aws_s3control_multi_region_access_point" "mrap" {
   provider = aws.s3control
 
   details {
-    name = "appmrap"
+    name = "app-mrap"
+
     region {
-      bucket = aws_s3_bucket.app_primary.id
+      bucket = aws_s3_bucket.primary.id
     }
+
     region {
-      bucket = aws_s3_bucket.app_secondary.id
+      bucket = aws_s3_bucket.secondary.id
     }
 
     public_access_block {
@@ -138,10 +162,6 @@ resource "aws_s3control_multi_region_access_point" "mrap" {
   }
 
   depends_on = [
-    aws_s3_bucket.app_primary,
-    aws_s3_bucket.app_secondary,
-    aws_s3_bucket_replication_configuration.replication,
-    aws_s3_bucket_versioning.primary_versioning,
-    aws_s3_bucket_versioning.secondary_versioning
+    aws_s3_bucket_replication_configuration.primary_to_secondary
   ]
 }
