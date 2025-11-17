@@ -10,12 +10,13 @@ resource "random_string" "app_secondary" {
 }
 
 resource "aws_s3_bucket" "app_primary" {
-  bucket        = "vpc-flow-logs-${random_string.app_primary.result}"
+  bucket        = "app-primary-${random_string.app_primary.result}"
   force_destroy = true
 }
 
 resource "aws_s3_bucket" "app_secondary" {
-  bucket        = "vpc-flow-logs-${random_string.app_secondary.result}"
+ provider = aws.west1 #new
+  bucket        = "app-secondary-${random_string.app_secondary.result}"
   force_destroy = true
 }
 
@@ -57,7 +58,14 @@ resource "aws_iam_role_policy" "replication" {
         Resource = "${aws_s3_bucket.app_primary.arn}/*"
       },
       {
-        Action   = ["s3:ReplicateObject", "s3:ReplicateDelete"]
+        Action = [
+          "s3:ReplicateObject",
+          "s3:ReplicateDelete",
+          "s3:ReplicateTags",
+          "s3:GetObjectVersionTagging",
+          "s3:GetObjectVersionForReplication",
+          "s3:ObjectOwnerOverrideToBucketOwner"
+        ]
         Effect   = "Allow"
         Resource = "${aws_s3_bucket.app_secondary.arn}/*"
       }
@@ -65,10 +73,32 @@ resource "aws_iam_role_policy" "replication" {
   })
 }
 
+resource "aws_s3_bucket_versioning" "primary_versioning" {
+  bucket = aws_s3_bucket.app_primary.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "secondary_versioning" {
+    provider = aws.west1 #new
+  bucket = aws_s3_bucket.app_secondary.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 resource "aws_s3_bucket_replication_configuration" "replication" {
-  provider = aws.west1
+  #provider = aws.west1 #must be same region as primary bucket (us-east-1)
   bucket   = aws_s3_bucket.app_primary.id
   role     = aws_iam_role.replication.arn
+
+    depends_on = [
+    aws_s3_bucket_versioning.primary_versioning,
+    aws_s3_bucket_versioning.secondary_versioning
+  ]
 
   rule {
     id     = "primary-to-secondary"
@@ -82,11 +112,16 @@ resource "aws_s3_bucket_replication_configuration" "replication" {
 }
 
 #Multi-Region Access Point
+provider "aws" {
+  alias  = "s3control"
+  region = "us-west-2"
+}
+
 resource "aws_s3control_multi_region_access_point" "mrap" {
-  provider = aws.west1
+  provider = aws.s3control
 
   details {
-    name = "APP-MRAP"
+    name = "appmrap"
     region {
       bucket = aws_s3_bucket.app_primary.id
     }
@@ -104,6 +139,9 @@ resource "aws_s3control_multi_region_access_point" "mrap" {
 
   depends_on = [
     aws_s3_bucket.app_primary,
-    aws_s3_bucket.app_secondary
+    aws_s3_bucket.app_secondary,
+    aws_s3_bucket_replication_configuration.replication,
+    aws_s3_bucket_versioning.primary_versioning,
+    aws_s3_bucket_versioning.secondary_versioning
   ]
 }

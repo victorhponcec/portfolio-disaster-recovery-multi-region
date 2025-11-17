@@ -1,7 +1,8 @@
 #ASG WEB
 resource "aws_launch_template" "web_r2" {
+  provider = aws.west1
   name_prefix   = "web-r2"
-  image_id      = var.amazon_linux_2023
+  image_id      = var.amazon_linux_2023_uswest1
   instance_type = "t2.micro"
   network_interfaces {
     associate_public_ip_address = false
@@ -14,6 +15,7 @@ resource "aws_launch_template" "web_r2" {
 }
 
 resource "aws_autoscaling_group" "asg_1_r2" {
+  provider = aws.west1
   name                 = "ASG1-r2"
   desired_capacity     = 2
   max_size             = 4
@@ -33,6 +35,7 @@ resource "aws_autoscaling_group" "asg_1_r2" {
 }
 
 resource "aws_autoscaling_policy" "scale_out_r2" {
+  provider = aws.west1
   name                   = "scale_out-r2"
   autoscaling_group_name = aws_autoscaling_group.asg_1_r2.name
   adjustment_type        = "ChangeInCapacity"
@@ -41,6 +44,7 @@ resource "aws_autoscaling_policy" "scale_out_r2" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "scale_out_r2" {
+  provider = aws.west1
   alarm_name          = "scale_out-r2"
   alarm_description   = "CPU Utilization"
   alarm_actions       = [aws_autoscaling_policy.scale_out_r2.arn]
@@ -58,8 +62,9 @@ resource "aws_cloudwatch_metric_alarm" "scale_out_r2" {
 
 #ASG APP
 resource "aws_launch_template" "app_r2" {
+  provider = aws.west1
   name_prefix   = "app-r2"
-  image_id      = var.amazon_linux_2023
+  image_id      = var.amazon_linux_2023_uswest1
   instance_type = "t2.micro"
   network_interfaces {
     associate_public_ip_address = false
@@ -72,6 +77,7 @@ resource "aws_launch_template" "app_r2" {
 }
 
 resource "aws_autoscaling_group" "asg_2_r2" {
+  provider = aws.west1
   name                 = "ASG2-r2"
   desired_capacity     = 2
   max_size             = 4
@@ -91,6 +97,7 @@ resource "aws_autoscaling_group" "asg_2_r2" {
 }
 
 resource "aws_autoscaling_policy" "asg2_scale_out_r2" {
+  provider = aws.west1
   name                   = "asg2_scale_out_r2"
   autoscaling_group_name = aws_autoscaling_group.asg_2_r2.name
   adjustment_type        = "ChangeInCapacity"
@@ -99,6 +106,7 @@ resource "aws_autoscaling_policy" "asg2_scale_out_r2" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "asg2_scale_out_r2" {
+  provider = aws.west1
   alarm_name          = "asg2_scale_out_r2"
   alarm_description   = "CPU Utilization"
   alarm_actions       = [aws_autoscaling_policy.asg2_scale_out_r2.arn]

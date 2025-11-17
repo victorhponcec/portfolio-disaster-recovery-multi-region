@@ -1,5 +1,6 @@
 #SSM VPC endpoint
 resource "aws_vpc_endpoint" "ssm_r2" {
+  provider = aws.west1
   vpc_id            = aws_vpc.secondary.id
   service_name      = "com.amazonaws.${var.region2}.ssm"
   vpc_endpoint_type = "Interface"
@@ -12,6 +13,7 @@ resource "aws_vpc_endpoint" "ssm_r2" {
 }
 
 resource "aws_vpc_endpoint" "ec2messages_r2" {
+  provider = aws.west1
   vpc_id            = aws_vpc.secondary.id
   service_name      = "com.amazonaws.${var.region2}.ec2messages"
   vpc_endpoint_type = "Interface"
@@ -24,6 +26,7 @@ resource "aws_vpc_endpoint" "ec2messages_r2" {
 }
 
 resource "aws_vpc_endpoint" "ssmmessages_r2" {
+  provider = aws.west1
   vpc_id            = aws_vpc.secondary.id
   service_name      = "com.amazonaws.${var.region2}.ssmmessages"
   vpc_endpoint_type = "Interface"
@@ -37,6 +40,7 @@ resource "aws_vpc_endpoint" "ssmmessages_r2" {
 
 #Secrets Manager VPC Endpoint
 resource "aws_vpc_endpoint" "secrets_manager_r2" {
+  provider = aws.west1
   vpc_id            = aws_vpc.secondary.id
   service_name      = "com.amazonaws.${var.region2}.secretsmanager"
   vpc_endpoint_type = "Interface"

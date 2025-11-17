@@ -1,5 +1,6 @@
 resource "aws_instance" "break_glass_r2" {
-  ami                         = var.amazon_linux_2023
+  provider = aws.west1
+  ami                         = var.amazon_linux_2023_uswest1
   instance_type               = "t2.micro"
   security_groups             = [aws_security_group.break_glass_r2.id]
   subnet_id                   = aws_subnet.public_a_az1_r2.id
@@ -13,11 +14,12 @@ resource "tls_private_key" "pkey_r2" {
 }
 resource "local_file" "private_key_pem_r2" {
   content         = tls_private_key.pkey_r2.private_key_pem
-  filename        = "AWSKeySSH.pem"
+  filename        = "AWSKeySSH-r2.pem"
   file_permission = "0400"
 }
 resource "aws_key_pair" "ec2_key_r2" {
-  key_name   = "AWSKeySSH"
+  provider = aws.west1
+  key_name   = "AWSKeySSH-r2"
   public_key = tls_private_key.pkey_r2.public_key_openssh
 
   lifecycle {

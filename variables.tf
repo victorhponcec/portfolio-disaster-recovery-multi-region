@@ -25,7 +25,7 @@ variable "az2" {
 variable "az1_r2" {
   description = "availability zone 1"
   type        = string
-  default     = "us-west-1a"
+  default     = "us-west-1c"
 }
 
 variable "az2_r2" {
@@ -52,4 +52,9 @@ variable "domain" {
 variable "amazon_linux_2023" {
   description = "Amazon Linux 2023"
   default     = "ami-05576a079321f21f8"
+}
+
+variable "amazon_linux_2023_uswest1" {
+  description = "Amazon Linux 2023"
+  default     = "ami-03ff9720b16e8da76"
 }

@@ -14,6 +14,7 @@ resource "aws_db_instance" "rds" {
   vpc_security_group_ids = [aws_security_group.db.id]
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet.name
   publicly_accessible    = false
+  backup_retention_period   = 1 #needed for creating replicas
 }
 
 # replica to Region 2

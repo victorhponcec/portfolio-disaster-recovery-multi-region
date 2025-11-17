@@ -1,5 +1,5 @@
 resource "aws_secretsmanager_secret" "db_password" {
-  name        = "db-password-v8"
+  name        = "db-password-v10"
   description = "Database Password"
 }
 
@@ -19,7 +19,7 @@ resource "aws_secretsmanager_secret_version" "db_password_v1" {
 #replica to region 2
 resource "aws_secretsmanager_secret" "db_password_west" {
   provider    = aws.west1
-  name        = "db-password-v8"
+  name        = "db-password-v10"
   description = "Database Password (replica)"
 }
 
