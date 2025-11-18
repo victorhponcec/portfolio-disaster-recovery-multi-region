@@ -1,14 +1,14 @@
 # Project: Multi-Region High Availability & Disaster Recovery Architecture (Warm Standby)
 **Author:** Victor Ponce | **Contact:** [Linkedin](https://www.linkedin.com/in/victorhugoponce) | **Website:** [victorponce.com](https://victorponce.com)
 
-**Versión en Español:** [README.es.md](https://github.com/victorhponcec/portfolio-network-security/blob/main/README.es.md)
+**Versión en Español:** [README.es.md](https://github.com/victorhponcec/portfolio-disaster-recovery-multi-region/blob/main/README.es.md)
 
 ---
 
 ## 1. Overview
 
 This project presents a **multi-region, highly available, warm-standby architecture on AWS**, fully automated with Terraform.  
-The goal is to provide a **production-grade disaster recovery (DR) design**, ensuring application continuity even in the event of a full regional outage.
+The goal is to provide a **production-grade disaster recovery (DR) design**, ensuring application continuity even in the event of a full regional outage **([cough cough](https://www.bbc.com/news/articles/cev1en9077ro))**.
 
 The solution uses **Region A (Primary)** and **Region B (Standby)** with synchronized infrastructure, cross-region replication, CloudFront origin failover, and multi-region data resilience.  
 
@@ -45,6 +45,7 @@ The core components include:
 
 ### **Regional Application Infrastructure**
 Each region contains:
+<div align="center">
 
 | Tier       | Subnets / AZs                                                | Resources                                                                 | Purpose |
 |------------|--------------------------------------------------------------|---------------------------------------------------------------------------|---------|
@@ -52,6 +53,9 @@ Each region contains:
 | **App**    | Private Subnets A/B                                          | Internal ALB, Auto Scaling Group                                         | Business logic processing |
 | **Database** | Private Subnets C/D                                        | RDS with Multi-AZ (Primary), Cross-region Read Replica (Standby)         | Data persistence |
 | **Endpoints** | Private Subnets                                            | SSM, Secrets Manager, S3 VPC Endpoints                                    | Private AWS communications |
+
+**(Table 1 – Infrastructure Components)**
+</div>
 
 ---
 
@@ -76,6 +80,14 @@ If the Primary region becomes unavailable, CloudFront will automatically trigger
 ## 5. Multi-Region Data Strategy
 
 There are many Disaster Recovery strategies that we can implement in AWS ([Disaster recovery options in the cloud](https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html)). I opted for Warm Standby, which consists of a scaled down version of the production environment, but which is fully functional and can handle traffic immediately after failover. The Auto Scaling Group will quickly adjust to handle the production load. This gives us a low RPO and RTO.
+
+<div align="center">
+
+<img src="README/disaster-recovery-strategies.png" width="700">
+
+**(img. 2 – Disaster Recovery Strategies)**
+
+</div>
 
 To support warm standby, the data must be available in both regions.
 
@@ -198,7 +210,5 @@ As mentioned previously, the focus of this project is High Availability (HA) and
 
 - [Securing a 3-tier application](https://github.com/victorhponcec/portfolio-aws-security-1)
 - [Multi-VPC Secure Network Architecture with Transit Gateway & On-Prem VPN](https://github.com/victorhponcec/portfolio-network-security/blob/main/README.md)
-
-You can find more information about DR in the AWS documentation: [Disaster recovery options in the cloud](https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html)
 
 ---
